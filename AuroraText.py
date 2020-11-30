@@ -7,7 +7,7 @@ import math
 import pandas as pd
 
 
-def AuroraText(filename="", Parameter="T30"):
+def AuroraText(filename="", parameter="T30"):
     if filename == "":
         root = tk.Tk()
         root.withdraw()
@@ -48,4 +48,7 @@ def AuroraText(filename="", Parameter="T30"):
 
 
 if __name__ == "__main__":
-    data = AuroraText(filename="/home/francoj/AcousticParameters.txt")
+    root = tk.Tk()
+    root.withdraw()
+    filename = filedialog.askopenfilename(title="Cargar archivo de aurora")
+    data = AuroraText(filename=filename, parameter="T30")
