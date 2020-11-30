@@ -1,91 +1,48 @@
-"""
-Es igual a convolver solo que si un audio no esta a la misma fs que el filtro inverso se hace un resample
-
-- Cargar un filtro inverso
-- Cargar el directorio donde estan los audios a convolucionar
-- Se convolucionan todos los archivos .wav del directorio que se cargo con el filtro inverso
-- Se guarda cada uno de los archivos convolucionados con el mismo nombre que tenia el archivo original pero finalizado en "_RIR"
-"""
-
-
 import os
 import numpy as np
 import tkinter as tk
 from tkinter import filedialog
-from scipy.io import wavfile
 from scipy import signal
 from tqdm import tqdm
 import soundfile as sf
 
-root = tk.Tk()
-root.withdraw()
 
-filename = filedialog.askopenfilename(
-    title="Cargar filtro inverso"
-)  # Cargar el filtro inverso
-initialdirectory = os.path.dirname(filename)
-filtroinverso, fs = sf.read(filename)
+def convolver(inverse_directory, directory):
+    os.mkdir(os.path.join(directory, "RIRs"))
+    RIR_directory = os.path.join(directory, "RIRs")
+    inverse_filter, SR = sf.read(inverse_directory)
+    sumfil = sum(inverse_filter)
+    wav_files = [
+        (os.path.join(directory, file))
+        for file in os.listdir(directory)
+        if (
+            os.path.isfile(os.path.join(directory, file))
+            and os.path.splitext(file)[1] == ".wav"
+        )
+    ]
 
-Directorio = filedialog.askdirectory(
-    initialdir=initialdirectory, title="Directorio de los archivos para convolucionar"
-)
-# Carga el directorio de los audios a convolucionar
+    for entry in tqdm(wav_files):
+        name = os.path.basename(entry)
+        name = os.path.splitext(entry)[0] + "_RIR.wav"
+        new_name = os.path.join(RIR_directory, name)
+        Data, SR = sf.read(entry)
+        if len(Data.shape) != 1:
+            Data = Data[:, 0]
+        RIR = signal.convolve(Data, inverse_filter, mode="same") / sumfil
+        RIR = RIR[np.where(RIR == np.amax(RIR))[0][0] - SR :]
+        RIR = (RIR / max(RIR)) * 0.8
+        sf.write(new_name, RIR, SR, subtype="PCM_16")
 
-sumfil = sum(filtroinverso)
 
-for entry in tqdm(
-    os.listdir(Directorio)
-):  # Lista todo lo que este en el directorio. El tqdm es la barra de estado, asi como esta la barra de estado cuenta todos los archivos que haya en la carpeta, no solo los audios, tengo que ver como corregirlo.
-    if (
-        os.path.isfile(os.path.join(Directorio, entry))
-        and os.path.splitext(entry)[1] == ".wav"
-    ):  # Si el elemento de la lista es un archivo (o sea no una carpeta) y ademas es .wav sigue
-        name = os.path.splitext(entry)[0]
-        Data, fs2 = sf.read(Directorio + "/" + entry)
-        # Data=Data[0][:]
-        # print(size(Data))
-        if fs2 == fs:
-            impulso = (
-                signal.convolve(Data, filtroinverso, mode="same") / sumfil
-            )  # Convoluciona el audio con el filtro inverso
-            impulso = impulso[
-                np.where(impulso == np.amax(impulso))[0][0] - fs :
-            ]  # Corta el audio desde un segundo antes del maximo, hay que ver si esta bien esto
-            impulso = (impulso / max(impulso)) * 0.8  # normalizo el audio
-            sf.write(
-                Directorio + "/" + name + "_RIR" + ".wav", impulso, fs, subtype="PCM_16"
-            )  # Guarda el impulso en 16 bits
-        else:
-            if "filtroinverso2" in locals():
-                impulso = (
-                    signal.convolve(Data, filtroinverso2, mode="same") / sumfil2
-                )  # FFFFFF#FFFFFF  #Convoluciona el audio con el filtro inverso
-                impulso = impulso[
-                    np.where(impulso == np.amax(impulso))[0][0] - fs2 :
-                ]  # Corta el audio desde un segundo antes del maximo, hay que ver si esta bien esto
-                impulso = (impulso / max(impulso)) * 0.8  # normalizo el audio
-                sf.write(
-                    Directorio + "/" + name + "_RIR" + ".wav",
-                    impulso,
-                    fs2,
-                    subtype="PCM_16",
-                )  # Guarda el impulso en 16 bits
-            else:
-                samples = round(len(filtroinverso) * (fs2 / fs))
-                filtroinverso2 = signal.resample(
-                    filtroinverso, samples
-                )  # Resample a fs2
-                sumfil2 = sum(filtroinverso2)
-                impulso = (
-                    signal.convolve(Data, filtroinverso2, mode="same") / sumfil2
-                )  # Convoluciona el audio con el filtro inverso
-                impulso = impulso[
-                    np.where(impulso == np.amax(impulso))[0][0] - fs2 :
-                ]  # Corta el audio desde un segundo antes del maximo, hay que ver si esta bien esto
-                impulso = (impulso / max(impulso)) * 0.8  # normalizo el audio
-                sf.write(
-                    Directorio + "/" + name + "_RIR" + ".wav",
-                    impulso,
-                    fs2,
-                    subtype="PCM_16",
-                )  # Guarda el impulso en 16 bits
+if __name__ == "__main__":
+    root = tk.Tk()
+    root.withdraw()
+
+    inverse_directory = filedialog.askopenfilename(title="Cargar filtro inverso")
+    initial_directory = os.path.dirname(inverse_directory)
+
+    directory = filedialog.askdirectory(
+        initialdir=initial_directory,
+        title="Directorio de los archivos para convolucionar",
+    )
+    convolver(inverse_directory, directory)
