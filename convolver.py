@@ -8,7 +8,10 @@ import soundfile as sf
 
 
 def convolver(inverse_directory, directory):
-    os.mkdir(os.path.join(directory, "RIRs"))
+    try:
+        os.mkdir(os.path.join(directory, "RIRs"))
+    except:
+        print("El directorio RIRs ya existe")
     RIR_directory = os.path.join(directory, "RIRs")
     inverse_filter, SR = sf.read(inverse_directory)
     sumfil = sum(inverse_filter)
