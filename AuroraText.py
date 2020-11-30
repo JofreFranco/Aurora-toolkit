@@ -16,8 +16,8 @@ def AuroraText(filename="", parameter="T30"):
     data = {"File_Name / Frequency [Hz]": list(Aurorafile["Filename"])}
     for col in Aurorafile.columns:
         col2 = col
-        if col.startswith(Parameter):
-            col = col.replace(Parameter + "_", "")
+        if col.startswith(parameter):
+            col = col.replace(parameter + "_", "")
             if len(col.split("k", 1)) > 1:
                 col = float(col.split("k", 1)[0])
                 col = col * 1000
