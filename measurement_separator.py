@@ -2,9 +2,6 @@ import os
 import numpy as np
 import tkinter as tk
 from tkinter import filedialog
-from scipy.io import wavfile
-from scipy import signal
-from tqdm import tqdm
 import soundfile as sf
 
 
