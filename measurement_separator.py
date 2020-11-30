@@ -14,7 +14,7 @@ def measurement_separator(
     N_measurements = np.int(
         len(audio) / ((int(silence_duration + int(sweep_length)) * SR))
     )
-    for n in range(N_measurements):  # Analizar el cambio a xrange
+    for n in range(N_measurements):
         if n == 0:
             measurement_length = (sweep_length + silence_duration - RT_margin) * SR
         else:
