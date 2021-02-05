@@ -7,10 +7,13 @@ import math
 import pandas as pd
 import csv
 from collections import OrderedDict
+import time
 
 
 class Dimension_error(Exception):
-    pass
+    def __init__(self, message):
+        self.message = message
+        print(self.message)
 
 
 class Parameter_type_error(Exception):
@@ -40,18 +43,19 @@ class Parameter(list):
         if show:
             plt.show()
         else:
-            return plot
+            return ax
 
     def calculate_global(self):
         global_parameter = ""  # calcular el parametro global
         return global_parameter
 
     def __calculate_mean(self):
-        mean = []  # calcular el promedio
-        for n in range(len(self[0])):
-            element = [number[n] for number in self[:]]
-            mean_element = np.nanmean(element)
-            mean.append(mean_element)
+        numpy_array = np.array(self)
+        n_frequencies = len(numpy_array[0][:])
+        mean = []
+        for n in range(n_frequencies):
+            element_mean = np.nanmean(numpy_array[:, n])
+            mean.append(element_mean)
         return mean
 
     def __calculate_std(self):
@@ -74,8 +78,10 @@ class Parameter(list):
             return new_parameter_instance
 
     def single_measure(self, n):
-        if n > len(self):
-            raise Dimension_error()
+        if n > len(self) - 1:
+            raise Dimension_error(
+                f"n should be a number between 0 and the number of measurements minus 1. {n} index is out of range"
+            )
         return self[n]
 
     def add_name(self, name):
@@ -172,4 +178,4 @@ if __name__ == "__main__":
 
     frequencies, parameter_names = get_headers(filepath)
     asf = AuroraText(frequencies, parameter_names, filepath=filepath)
-    asf.T30.plot_mean()
+    asf.T30.single_measure(7)
