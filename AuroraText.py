@@ -28,15 +28,20 @@ class Parameter(list):
         self.std = self.__calculate_std()
         self.median = self.__calculate_median()
 
-    def plot_mean(self, show=True, save=False, deviation=True, unit=""):
+    def plot_mean(
+        self, show=True, save=False, deviation=True, label="", unit="", **kwds
+    ):
         if self.name:
             name = self.name
         else:
             name = ""
         fig, ax = plt.subplots()
-        ax.plot(self.frequency, self.mean)  # plotear
+        ax.plot(self.frequency, self.mean, label=label)  # plotear
         ax.set(xlabel="Frequency [Hz]", ylabel=name + unit)
         plt.grid(True)
+        if kwds:
+            for key, value in kwds:
+                ax.plot(value, label=key)
         if save:
             pass
             # codigo para guardar el plot
