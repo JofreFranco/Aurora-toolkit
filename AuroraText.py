@@ -8,6 +8,7 @@ import pandas as pd
 import csv
 from collections import OrderedDict
 import time
+import warnings
 
 
 class Dimension_error(Exception):
@@ -24,12 +25,29 @@ class Parameter(list):
     def __init__(self, parameter, frequency):
         super(Parameter, self).__init__(parameter)
         self.frequency = frequency
-        self.mean = self.__calculate_mean()
-        self.std = self.__calculate_std()
-        self.median = self.__calculate_median()
+
+        if not np.nansum(self):
+            self.mean = np.nan
+            self.std = np.nan
+            self.median = np.nan
+            self.global_parameter = np.nan
+        else:
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                self.mean = self.__calculate_mean()
+                self.std = self.__calculate_std()
+                self.median = self.__calculate_median()
+                self.global_parameter = self.__calculate_global()
 
     def plot_mean(
-        self, show=True, save=False, deviation=True, label="", unit="", **kwds
+        self,
+        show=True,
+        save=False,
+        deviation=True,
+        label="",
+        unit="",
+        reference=False,
+        **kwds,
     ):
         if self.name:
             name = self.name
@@ -50,8 +68,9 @@ class Parameter(list):
         else:
             return ax
 
-    def calculate_global(self):
-        global_parameter = ""  # calcular el parametro global
+    def __calculate_global(self):
+
+        global_parameter = np.nanmean(self.mean)  # calcular el parametro global
         return global_parameter
 
     def __calculate_mean(self):
@@ -64,12 +83,27 @@ class Parameter(list):
         return mean
 
     def __calculate_std(self):
-        std = ""  # calcular el desvio
+        numpy_array = np.array(self)
+        n_frequencies = len(numpy_array[0][:])
+        std = []
+        for n in range(n_frequencies):
+            element_std = np.nanstd(numpy_array[:, n])
+            std.append(element_std)
         return std
 
     def __calculate_median(self):
-        median = ""  # calcular la media
-        return median
+        numpy_array = np.array(self)
+        sum_array = np.nansum(numpy_array)
+
+        if sum_array:
+            n_frequencies = len(numpy_array[0][:])
+            median = []
+            for n in range(n_frequencies):
+                element_median = np.nanmedian(numpy_array[:, n])
+                median.append(element_median)
+            return median
+        else:
+            return np.nan
 
     def remove_outliers(self, in_place=False):
         parameter = ""  # sacar los outliers
@@ -92,12 +126,22 @@ class Parameter(list):
     def add_name(self, name):
         self.name = name
 
+    def add_reference(self, reference):
+        self.reference = reference
+
+    def __check_emptyness(self):
+        if not np.nansum(self):
+            return True
+        else:
+            return False
+
 
 class Measurement(dict):
     def __init__(self, *args, **kwds):
         super(Measurement, self).__init__(*args, **kwds)
         self.__dict__ = self
         self.__add_names()
+        self.__print_status()
 
     def print_pdf(self):
         pass
@@ -105,6 +149,15 @@ class Measurement(dict):
     def __add_names(self):
         for key in self.__dict__:
             self.__dict__[key].add_name(key)
+
+    def __print_status(self):
+        for key, value in self.items():
+            if not np.nansum(value):
+                print(
+                    "Warning: "
+                    + key
+                    + " was empty, all its values and attributes will be nan. Some methods may raise errors."
+                )
 
 
 def get_headers(filepath):
@@ -160,18 +213,24 @@ def AuroraText(frequencies, parameter_names, filepath=""):
                 except:
                     element = np.nan
                 row[n_element] = element
+
             if n_row == 0 or n_row == 1 or n_row == 2:
                 continue
             else:
                 for n, parameter in enumerate(parameter_names):
                     start = n * n_f
                     end = ((n + 1) * n_f) - 2
-                    measurement_dict[parameter].append(row[start:end])
+                    parameter_row = row[start:end]
+                    measurement_dict[parameter].append(parameter_row)
 
         for parameter in parameter_names:
+            nancheck = np.nansum(measurement_dict[parameter])
+            if not nancheck:
+                measurement_dict[parameter] = [np.nan]
             measurement_dict[parameter] = Parameter(
                 measurement_dict[parameter], frequencies
             )
+
         return Measurement(measurement_dict)
 
 
@@ -183,4 +242,4 @@ if __name__ == "__main__":
 
     frequencies, parameter_names = get_headers(filepath)
     asf = AuroraText(frequencies, parameter_names, filepath=filepath)
-    asf.T30.single_measure(7)
+    # asf.T30.single_measure(7)
