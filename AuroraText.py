@@ -242,4 +242,4 @@ if __name__ == "__main__":
 
     frequencies, parameter_names = get_headers(filepath)
     asf = AuroraText(frequencies, parameter_names, filepath=filepath)
-    # asf.T30.single_measure(7)
+    print(asf.T30.single_measure(7))
